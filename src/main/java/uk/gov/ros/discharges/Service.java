@@ -1,6 +1,8 @@
 package uk.gov.ros.discharges;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -18,10 +20,16 @@ import org.slf4j.Logger;
 @EnableAutoConfiguration
 public class Service {
 
-    private static Logger log = LoggerFactory.getLogger(Service.class);
+    static Logger log = LoggerFactory.getLogger(Service.class);
+
+    @Value("${SERVICE_C:http://localhost:8003/}")
+    static String serviceC = configure("SERVICE_C", "http://localhost:8003");
+
+    @Value("${SERVICE_D:http://localhost:8004/}")
+    static String serviceD = configure("SERVICE_D", "http://localhost:8004");;
 
     @Autowired
-    private RestTemplate restTemplate;
+    RestTemplate restTemplate;
 
     @Bean
     public RestTemplate restTemplate() {
@@ -33,18 +41,22 @@ public class Service {
         log.info("Java service called");
         String string;
 
-        log.debug("Calling service-c");
-        string = restTemplate.getForObject("http://localhost:8003/", String.class);
+        log.debug("Calling service-c: " + serviceC);
+        string = restTemplate.getForObject(serviceC, String.class);
         log.debug("service-c result: " + string);
 
-        log.debug("Calling service-d");
-        string = restTemplate.getForObject("http://localhost:8004/", String.class);
+        log.debug("Calling service-d: " + serviceD);
+        string = restTemplate.getForObject(serviceD, String.class);
         log.debug("service-d result: " + string);
 
         return "Service call succeeded (service-b)";
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         SpringApplication.run(Service.class, args);
+    }
+
+    static String configure(String variable, String fallback) {
+        return StringUtils.defaultIfBlank(System.getenv(variable), fallback);
     }
 }
