@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.sleuth.SpanAccessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +23,9 @@ public class Service {
 
     static Logger log = LoggerFactory.getLogger(Service.class);
 
+    @Value("${spring.application.name}")
+    private String appName;
+
     @Value("${SERVICE_C:http://localhost:8003/}")
     static String serviceC = configure("SERVICE_C", "http://localhost:8003");
 
@@ -36,20 +40,23 @@ public class Service {
         return new RestTemplate();
     }
 
+    @Autowired
+    private SpanAccessor spanAccessor;
+
     @RequestMapping("/")
     String service() {
-        log.info("Java service called");
+        log.info(appName + " called");
         String string;
 
-        log.debug("Calling service-c: " + serviceC);
+        log.debug(appName + ": calling service-c: " + serviceC);
         string = restTemplate.getForObject(serviceC, String.class);
-        log.debug("service-c result: " + string);
+        log.debug(appName + ": service-c result: " + string);
 
-        log.debug("Calling service-d: " + serviceD);
+        log.debug(appName + ": calling service-d: " + serviceD);
         string = restTemplate.getForObject(serviceD, String.class);
-        log.debug("service-d result: " + string);
+        log.debug(appName + ": service-d result: " + string);
 
-        return "Service call succeeded (service-b)";
+        return new Result(appName, this.spanAccessor.getCurrentSpan()).toString();
     }
 
     public static void main(String[] args) throws InterruptedException {
